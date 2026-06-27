@@ -5,7 +5,6 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from supabase import create_client
 from dotenv import load_dotenv
 import os
-from datetime import datetime
 
 load_dotenv()
 
@@ -23,18 +22,6 @@ supabase = create_client(
 )
 
 system_prompt = "You are an expert data analyst assistant. You help users understand data, statistics, charts, SQL, Python, and business insights in simple clear language."
-
-def get_all_sessions():
-    result = supabase.table("chat_history")\
-        .select("session_id, content, created_at")\
-        .order("created_at", desc=True)\
-        .execute()
-    sessions = {}
-    for row in result.data:
-        sid = row["session_id"]
-        if sid not in sessions:
-            sessions[sid] = row["content"][:40] + "..."
-    return sessions
 
 def load_history(session_id):
     result = supabase.table("chat_history")\
@@ -63,12 +50,12 @@ def clear_session(session_id):
         .eq("session_id", session_id)\
         .execute()
 
-# Initialize session state first
+# Initialize session state
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 if "chat_messages" not in st.session_state:
-    st.session_state.chat_messages = []
+    st.session_state.chat_messages = load_history(st.session_state.session_id)
 
 # Sidebar
 with st.sidebar:
@@ -79,14 +66,6 @@ with st.sidebar:
         st.session_state.session_id = str(uuid.uuid4())
         st.session_state.chat_messages = []
         st.rerun()
-
-    st.markdown("#### Previous Chats")
-    sessions = get_all_sessions()
-    for sid, preview in sessions.items():
-        if st.button(f"🗨️ {preview}", key=sid):
-            st.session_state.session_id = sid
-            st.session_state.chat_messages = load_history(sid)
-            st.rerun()
 
     st.markdown("---")
     if st.button("🗑️ Clear Current Chat"):

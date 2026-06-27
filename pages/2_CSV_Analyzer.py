@@ -23,18 +23,6 @@ supabase = create_client(
     os.getenv("SUPABASE_KEY")
 )
 
-def get_all_sessions():
-    result = supabase.table("csv_chat_history")\
-        .select("session_id, content, created_at")\
-        .order("created_at", desc=True)\
-        .execute()
-    sessions = {}
-    for row in result.data:
-        sid = row["session_id"]
-        if sid not in sessions:
-            sessions[sid] = row["content"][:40] + "..."
-    return sessions
-
 def load_history(session_id):
     result = supabase.table("csv_chat_history")\
         .select("*")\
@@ -67,7 +55,7 @@ if "csv_session_id" not in st.session_state:
     st.session_state.csv_session_id = str(uuid.uuid4())
 
 if "csv_messages" not in st.session_state:
-    st.session_state.csv_messages = []
+    st.session_state.csv_messages = load_history(st.session_state.csv_session_id)
 
 # Sidebar
 with st.sidebar:
@@ -78,14 +66,6 @@ with st.sidebar:
         st.session_state.csv_session_id = str(uuid.uuid4())
         st.session_state.csv_messages = []
         st.rerun()
-
-    st.markdown("#### Previous Chats")
-    sessions = get_all_sessions()
-    for sid, preview in sessions.items():
-        if st.button(f"🗨️ {preview}", key=sid):
-            st.session_state.csv_session_id = sid
-            st.session_state.csv_messages = load_history(sid)
-            st.rerun()
 
     st.markdown("---")
     if st.button("🗑️ Clear Current Chat"):
