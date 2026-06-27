@@ -1,3 +1,4 @@
+import uuid
 import streamlit as st
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -6,7 +7,6 @@ from dotenv import load_dotenv
 import os
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
 
 load_dotenv()
 
@@ -62,12 +62,12 @@ def clear_session(session_id):
         .eq("session_id", session_id)\
         .execute()
 
-# Session state
+# Initialize session state
 if "csv_session_id" not in st.session_state:
-    st.session_state.csv_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    st.session_state.csv_session_id = str(uuid.uuid4())
 
 if "csv_messages" not in st.session_state:
-    st.session_state.csv_messages = load_history(st.session_state.csv_session_id)
+    st.session_state.csv_messages = []
 
 # Sidebar
 with st.sidebar:
@@ -75,7 +75,7 @@ with st.sidebar:
     st.markdown("---")
 
     if st.button("➕ New Chat"):
-        st.session_state.csv_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        st.session_state.csv_session_id = str(uuid.uuid4())
         st.session_state.csv_messages = []
         st.rerun()
 
@@ -89,10 +89,9 @@ with st.sidebar:
 
     st.markdown("---")
     if st.button("🗑️ Clear Current Chat"):
-        if "csv_session_id" in st.session_state:
-            clear_session(st.session_state.csv_session_id)
-            st.session_state.csv_messages = []
-            st.rerun()
+        clear_session(st.session_state.csv_session_id)
+        st.session_state.csv_messages = []
+        st.rerun()
 
 # Main area
 st.title("📊 CSV Analyzer")
@@ -170,12 +169,13 @@ if uploaded_file:
         st.chat_message("assistant").write(response.content)
 
 else:
-    st.info("👆 Upload a CSV file to get started")
-if st.session_state.csv_messages:
-    st.markdown("---")
-    st.subheader("🤖 Previous Conversation")
-    for msg in st.session_state.csv_messages:
-        if isinstance(msg, HumanMessage):
-            st.chat_message("user").write(msg.content)
-        else:
-            st.chat_message("assistant").write(msg.content)
+    if st.session_state.csv_messages:
+        st.markdown("---")
+        st.subheader("🤖 Previous Conversation")
+        for msg in st.session_state.csv_messages:
+            if isinstance(msg, HumanMessage):
+                st.chat_message("user").write(msg.content)
+            else:
+                st.chat_message("assistant").write(msg.content)
+    else:
+        st.info("👆 Upload a CSV file to get started")

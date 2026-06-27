@@ -1,3 +1,4 @@
+import uuid
 import streamlit as st
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -62,13 +63,20 @@ def clear_session(session_id):
         .eq("session_id", session_id)\
         .execute()
 
+# Initialize session state first
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+if "chat_messages" not in st.session_state:
+    st.session_state.chat_messages = []
+
 # Sidebar
 with st.sidebar:
     st.markdown("### 💬 DataMind AI")
     st.markdown("---")
 
     if st.button("➕ New Chat"):
-        st.session_state.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        st.session_state.session_id = str(uuid.uuid4())
         st.session_state.chat_messages = []
         st.rerun()
 
@@ -82,21 +90,14 @@ with st.sidebar:
 
     st.markdown("---")
     if st.button("🗑️ Clear Current Chat"):
-        if "session_id" in st.session_state:
-            clear_session(st.session_state.session_id)
-            st.session_state.chat_messages = []
-            st.rerun()
+        clear_session(st.session_state.session_id)
+        st.session_state.chat_messages = []
+        st.rerun()
 
 # Main chat area
 st.title("💬 AI Data Analyst Chat")
 st.caption("Ask me anything about data, statistics, or business insights")
 st.markdown("---")
-
-if "session_id" not in st.session_state:
-    st.session_state.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-if "chat_messages" not in st.session_state:
-    st.session_state.chat_messages = load_history(st.session_state.session_id)
 
 for msg in st.session_state.chat_messages:
     if isinstance(msg, HumanMessage):
